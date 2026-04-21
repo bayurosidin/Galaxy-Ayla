@@ -32,6 +32,15 @@
   <div id="dark-overlay"></div>
   <div id="info"></div>
 
+  <!-- Tombol tap to start khusus HP agar audio bisa jalan -->
+  <div id="mobile-start-overlay">
+    <div id="mobile-start-box">
+      <div class="sparkle">✨</div>
+      <p>Tap untuk memulai</p>
+      <button id="mobile-start-btn">🌌 Masuk ke Galaxy</button>
+    </div>
+  </div>
+
   <h1 style="position: fixed; bottom: 10px; right: 10px; font-size: 18px; font-family: Arial, sans-serif; color: white; background: rgba(0, 0, 0, 0.4); padding: 6px 12px; border-radius: 8px; z-index: 9999;">
     by bayursdn
   </h1>
@@ -44,24 +53,47 @@
     const startTime = 28;
     const endTime = 55;
 
-    bgMusic.addEventListener('canplaythrough', () => {
-      bgMusic.currentTime = startTime;
-    }, { once: true });
-
     bgMusic.addEventListener('timeupdate', () => {
       if (bgMusic.currentTime >= endTime) {
         bgMusic.currentTime = startTime;
-        bgMusic.play();
+        bgMusic.play().catch(() => {});
       }
     });
 
-    // Dipanggil saat planet diklik dari script.js
+    window._audioUnlocked = false;
+
+    function unlockAndPlayAudio() {
+      if (window._audioUnlocked) return;
+      window._audioUnlocked = true;
+      bgMusic.currentTime = startTime;
+      bgMusic.play().catch(err => console.warn('Audio error:', err));
+    }
+
     window.ytPlayer = {
       playVideo: () => {
-        bgMusic.currentTime = startTime;
-        bgMusic.play().catch(err => console.warn('Audio error:', err));
+        unlockAndPlayAudio();
       }
     };
+
+    const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    const mobileOverlay = document.getElementById('mobile-start-overlay');
+    const mobileBtn = document.getElementById('mobile-start-btn');
+
+    if (isMobile) {
+      mobileOverlay.style.display = 'flex';
+      mobileBtn.addEventListener('click', () => {
+        bgMusic.currentTime = startTime;
+        bgMusic.play().then(() => {
+          bgMusic.pause();
+          window._audioUnlocked = true;
+        }).catch(() => {
+          window._audioUnlocked = true;
+        });
+        mobileOverlay.style.display = 'none';
+      });
+    } else {
+      mobileOverlay.style.display = 'none';
+    }
   </script>
 
   <script type="module" src="script.js"></script>
