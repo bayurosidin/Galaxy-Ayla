@@ -1177,12 +1177,12 @@ function requestFullScreen() {
   }
 }
 
-function onCanvasClick(event) {
+function handleInteraction(clientX, clientY) {
   if (introStarted) return;
 
   const rect = renderer.domElement.getBoundingClientRect();
-  mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-  mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
 
   const intersects = raycaster.intersectObject(planet);
@@ -1192,7 +1192,6 @@ function onCanvasClick(event) {
     fadeInProgress = true;
     document.body.classList.add("intro-started");
     playGalaxyAudio();
-
     startCameraAnimation();
 
     if (starField && starField.geometry) {
@@ -1201,11 +1200,18 @@ function onCanvasClick(event) {
   }
 }
 
+function onCanvasClick(event) {
+  handleInteraction(event.clientX, event.clientY);
+}
+
+function onCanvasTouch(event) {
+  // Ambil koordinat dari touch pertama
+  const touch = event.changedTouches[0];
+  handleInteraction(touch.clientX, touch.clientY);
+}
+
 renderer.domElement.addEventListener("click", onCanvasClick);
-
-animate();
-
-renderer.domElement.addEventListener('click', onCanvasClick);
+renderer.domElement.addEventListener("touchend", onCanvasTouch, { passive: true });
 
 animate();
 
