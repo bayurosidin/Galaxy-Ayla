@@ -105,50 +105,42 @@
 
   <script>
     const bgMusic = document.getElementById('bgMusic');
-    const startTime = 28;
-    const endTime = 55;
+    const startTime = 22;  // mulai dari detik 22
+    const endTime = 55;    // loop kembali ke detik 22
 
-    // Loop antara startTime - endTime
+    // Loop antara startTime - endTime (tanpa delay timeupdate)
     bgMusic.addEventListener('timeupdate', () => {
-      if (bgMusic.currentTime >= endTime) {
+      if (bgMusic.currentTime >= endTime || bgMusic.currentTime < startTime) {
         bgMusic.currentTime = startTime;
-        bgMusic.play().catch(() => {});
       }
     });
 
-    // =====================================================
-    // FIX UTAMA: Overlay start screen untuk SEMUA platform
-    // Browser (desktop & mobile) butuh interaksi user dulu
-    // sebelum audio diizinkan diputar.
-    // =====================================================
     const startScreen = document.getElementById('start-screen');
     const enterBtn = document.getElementById('enter-btn');
 
     let audioUnlocked = false;
+    let musicPlaying = false;
 
     function unlockAndStart() {
       if (audioUnlocked) return;
       audioUnlocked = true;
 
-      // Sembunyikan overlay
-      startScreen.style.transition = 'opacity 0.6s';
-      startScreen.style.opacity = '0';
-      setTimeout(() => {
-        startScreen.style.display = 'none';
-      }, 600);
+      // Langsung sembunyikan overlay tanpa delay
+      startScreen.style.display = 'none';
 
-      // Unlock audio context dengan interaksi user ini
+      // Preload audio ke posisi yang benar agar tidak ada delay saat planet diklik
       bgMusic.currentTime = startTime;
-      bgMusic.play().then(() => {
-        // Berhasil diputar — pause dulu, nanti diputar saat planet diklik
-        bgMusic.pause();
-        bgMusic.currentTime = startTime;
-      }).catch(err => {
-        console.warn('Audio unlock gagal:', err);
-      });
+      // Putar lalu langsung pause — ini "memanaskan" audio context
+      // sehingga saat planet diklik nanti, langsung bunyi tanpa jeda
+      const warmup = bgMusic.play();
+      if (warmup !== undefined) {
+        warmup.then(() => {
+          bgMusic.pause();
+          bgMusic.currentTime = startTime;
+        }).catch(() => {});
+      }
     }
 
-    // Trigger dari klik tombol atau klik di mana saja pada overlay
     enterBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       unlockAndStart();
@@ -162,10 +154,8 @@
     // Dipanggil dari script.js saat planet diklik/ditap
     window.ytPlayer = {
       playVideo: () => {
-        if (!audioUnlocked) {
-          // Fallback jika entah bagaimana audio belum di-unlock
-          audioUnlocked = true;
-        }
+        if (musicPlaying) return;
+        musicPlaying = true;
         bgMusic.currentTime = startTime;
         bgMusic.play().catch(err => console.warn('Audio play error:', err));
       }
